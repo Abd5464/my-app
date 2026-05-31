@@ -1,12 +1,17 @@
+Here is the complete, consolidated file containing the updated code with all fixes applied.
+
+You can drop this directly into your React project (e.g., as `App.jsx`). It includes the SSR environment checks, stable `useEffect` dependencies, absolute layout position tracking fixes for the logo layers, and native CSS hover behaviors handled via the `<style>` block.
+
+```jsx
 import { useState, useEffect, useRef } from "react";
 import {
   Leaf, Zap, Recycle, Menu, X, Play, ArrowRight, Plug,
-  Trash2, Sprout, Factory, Beef, Building2, Globe, TrendingUp,
-  Linkedin, Twitter, Instagram, Flame,
+  Trash2, Sprout, Factory, Beef, Building2, Globe, Flame,
+  Linkedin, Twitter, Instagram
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
-/*  Brand tokens                                                       */
+/* Brand tokens                                                      */
 /* ------------------------------------------------------------------ */
 const C = {
   primary: "#1A7A4A",
@@ -19,14 +24,16 @@ const C = {
 };
 
 /* ------------------------------------------------------------------ */
-/*  Hooks                                                              */
+/* Hooks                                                             */
 /* ------------------------------------------------------------------ */
 function useInView(threshold = 0.2) {
   const ref = useRef(null);
   const [seen, setSeen] = useState(false);
+  
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    
     const obs = new IntersectionObserver(
       ([e]) => {
         if (e.isIntersecting) {
@@ -39,34 +46,43 @@ function useInView(threshold = 0.2) {
     obs.observe(el);
     return () => obs.disconnect();
   }, [threshold]);
+  
   return [ref, seen];
 }
 
 /* ------------------------------------------------------------------ */
-/*  Particle background (canvas)                                       */
+/* Particle background (canvas)                                      */
 /* ------------------------------------------------------------------ */
 function ParticleBackground() {
   const ref = useRef(null);
+  
   useEffect(() => {
     const canvas = ref.current;
+    if (!canvas) return;
     const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    
     let raf;
-    let w, h;
+    let w = 0, h = 0;
+    
     const resize = () => {
       w = canvas.width = canvas.offsetWidth;
       h = canvas.height = canvas.offsetHeight;
     };
+    
     resize();
     window.addEventListener("resize", resize);
+    
     const N = 60;
     const dots = Array.from({ length: N }, () => ({
-      x: Math.random() * w,
-      y: Math.random() * h,
+      x: Math.random() * (window.innerWidth || 1200),
+      y: Math.random() * (window.innerHeight || 800),
       r: Math.random() * 2.2 + 0.6,
       s: Math.random() * 0.5 + 0.15,
       a: Math.random() * 0.5 + 0.2,
       drift: (Math.random() - 0.5) * 0.3,
     }));
+    
     const tick = () => {
       ctx.clearRect(0, 0, w, h);
       for (const d of dots) {
@@ -85,26 +101,29 @@ function ParticleBackground() {
       }
       raf = requestAnimationFrame(tick);
     };
+    
     tick();
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
     };
   }, []);
+  
   return (
     <canvas
       ref={ref}
-      style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
+      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }}
     />
   );
 }
 
 /* ------------------------------------------------------------------ */
-/*  Animated counter                                                   */
+/* Animated counter                                                  */
 /* ------------------------------------------------------------------ */
 function Counter({ to, prefix = "", suffix = "", decimals = 0, dur = 1600 }) {
   const [ref, seen] = useInView(0.5);
   const [val, setVal] = useState(0);
+  
   useEffect(() => {
     if (!seen) return;
     let start;
@@ -119,6 +138,7 @@ function Counter({ to, prefix = "", suffix = "", decimals = 0, dur = 1600 }) {
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
   }, [seen, to, dur]);
+  
   return (
     <span ref={ref}>
       {prefix}
@@ -132,7 +152,7 @@ function Counter({ to, prefix = "", suffix = "", decimals = 0, dur = 1600 }) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Reveal wrapper                                                     */
+/* Reveal wrapper                                                    */
 /* ------------------------------------------------------------------ */
 function Reveal({ children, delay = 0, y = 28 }) {
   const [ref, seen] = useInView(0.15);
@@ -151,7 +171,7 @@ function Reveal({ children, delay = 0, y = 28 }) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Logo                                                               */
+/* Logo                                                              */
 /* ------------------------------------------------------------------ */
 function Logo({ light }) {
   return (
@@ -163,12 +183,13 @@ function Logo({ light }) {
           borderRadius: 9,
           display: "grid",
           placeItems: "center",
+          position: "relative",
           background: `linear-gradient(135deg, ${C.primary}, ${C.primaryLight})`,
           boxShadow: "0 4px 14px rgba(26,122,74,.35)",
         }}
       >
         <Leaf size={15} color="#fff" style={{ position: "absolute", transform: "translate(-3px,-2px)" }} />
-        <Zap size={14} color={C.secondary} style={{ transform: "translate(4px,3px)" }} fill={C.secondary} />
+        <Zap size={14} color={C.secondary} style={{ position: "absolute", transform: "translate(4px,3px)" }} fill={C.secondary} />
       </span>
       <span
         style={{
@@ -186,17 +207,20 @@ function Logo({ light }) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Navbar                                                             */
+/* Navbar                                                            */
 /* ------------------------------------------------------------------ */
 function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  
   useEffect(() => {
     const h = () => setScrolled(window.scrollY > 30);
     window.addEventListener("scroll", h);
     return () => window.removeEventListener("scroll", h);
   }, []);
+  
   const links = ["Solutions", "How It Works", "Impact", "About", "Contact"];
+  
   return (
     <nav
       style={{
@@ -227,6 +251,7 @@ function Navbar() {
             <a
               key={l}
               href="#"
+              className="nav-link-item"
               style={{
                 color: "rgba(255,255,255,.82)",
                 fontSize: 14.5,
@@ -234,8 +259,6 @@ function Navbar() {
                 textDecoration: "none",
                 transition: "color .2s",
               }}
-              onMouseEnter={(e) => (e.target.style.color = C.primaryLight)}
-              onMouseLeave={(e) => (e.target.style.color = "rgba(255,255,255,.82)")}
             >
               {l}
             </a>
@@ -291,7 +314,7 @@ function pillBtn(primary) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Hero                                                               */
+/* Hero                                                              */
 /* ------------------------------------------------------------------ */
 function Hero() {
   const words = ["Waste to Power.", "Locally Built.", "Nationally Scalable."];
@@ -388,7 +411,7 @@ function Hero() {
           </button>
         </div>
       </div>
-      {/* SDG strip */}
+      
       <div
         style={{
           position: "relative",
@@ -429,7 +452,7 @@ function Hero() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Problem                                                            */
+/* Problem                                                           */
 /* ------------------------------------------------------------------ */
 function Problem() {
   const Stat = ({ icon, big, label }) => (
@@ -465,7 +488,7 @@ function Problem() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Solution / process flow                                            */
+/* Solution / process flow                                            */
 /* ------------------------------------------------------------------ */
 function Solution() {
   const steps = [
@@ -512,7 +535,7 @@ function Solution() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Target segments                                                    */
+/* Target segments                                                    */
 /* ------------------------------------------------------------------ */
 function Segments() {
   const cards = [
@@ -564,7 +587,7 @@ function SegCard({ icon, t, d }) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Market opportunity                                                 */
+/* Market opportunity                                                 */
 /* ------------------------------------------------------------------ */
 function Market() {
   const funnel = [
@@ -577,7 +600,6 @@ function Market() {
       <div style={{ maxWidth: 1150, margin: "0 auto", position: "relative" }}>
         <Reveal><h2 style={{ ...secTitle(), color: "#fff" }}>A Market the Size of<br /><span style={{ color: C.primaryLight }}>the Opportunity</span></h2></Reveal>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 50, marginTop: 60, alignItems: "center" }} className="market-grid">
-          {/* counters */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 28 }}>
             {[
               { big: <><Counter to={16} />–<Counter to={19} suffix="M" /></>, l: "Tonnes/year feedstock availability" },
@@ -593,7 +615,6 @@ function Market() {
               </Reveal>
             ))}
           </div>
-          {/* funnel */}
           <Reveal delay={150}>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
               {funnel.map((f) => (
@@ -621,7 +642,7 @@ function Market() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Impact grid                                                        */
+/* Impact grid                                                        */
 /* ------------------------------------------------------------------ */
 function Impact() {
   const items = [
@@ -652,7 +673,7 @@ function Impact() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Roadmap                                                            */
+/* Roadmap                                                            */
 /* ------------------------------------------------------------------ */
 function Roadmap() {
   const phases = [
@@ -687,7 +708,7 @@ function Roadmap() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  CTA banner                                                         */
+/* CTA banner                                                         */
 /* ------------------------------------------------------------------ */
 function CTA() {
   return (
@@ -708,7 +729,7 @@ function CTA() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Footer                                                             */
+/* Footer                                                             */
 /* ------------------------------------------------------------------ */
 function Footer() {
   return (
@@ -740,15 +761,12 @@ function Footer() {
         </div>
       </div>
       <div style={{ maxWidth: 1150, margin: "48px auto 0", paddingTop: 24, borderTop: "1px solid rgba(255,255,255,.1)", fontSize: 13.5 }}>
-        © 2025 Sync Energy. All rights reserved.
+        © 2026 Sync Energy. All rights reserved.
       </div>
     </footer>
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Helpers + root                                                     */
-/* ------------------------------------------------------------------ */
 function secTitle() {
   return {
     fontFamily: "'Plus Jakarta Sans',sans-serif",
@@ -770,6 +788,7 @@ export default function App() {
         @keyframes fadeUp { from { opacity:0; transform:translateY(26px);} to {opacity:1; transform:none;} }
         * { box-sizing: border-box; }
         a { -webkit-tap-highlight-color: transparent; }
+        .nav-link-item:hover { color: ${C.primaryLight} !important; }
         @media (max-width: 860px) {
           .nav-desktop { display: none !important; }
           .nav-burger { display: block !important; }
@@ -790,3 +809,5 @@ export default function App() {
     </div>
   );
 }
+
+```
